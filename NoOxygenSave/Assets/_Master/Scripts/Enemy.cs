@@ -17,17 +17,18 @@ public class Enemy : MonoBehaviour {
 		if(health <= 0)
         {
             Destroy(this.gameObject, .5f);
+            //ControllerObject.instance.Refill(oxygen);
         }
 	}
     
-    public void OnCollisionEnter(Collider col)
+    public void OnTriggerEnter(Collider col)
     {
-        Debug.Log("LOL");
         if(col.gameObject.GetComponent<Astronaut>() != null)
         {
             if(ControllerObject.instance.height > armor)
             {
                 TakeDamage();
+                ControllerObject.instance.Bounce();
             }
             else
             {

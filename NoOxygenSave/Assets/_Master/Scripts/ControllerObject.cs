@@ -12,18 +12,26 @@ public class ControllerObject : MonoBehaviour {
     private Vector3 tilt;
     private Vector3 groundPos;
 
-    private float jumpSpeed = 1f;
+    private float jumpSpeed;
+    private float jumpSpeedMax = 2f;
     private float jumpTimer = 0f;
     private float jumpTimerMax = 1f;
-    private float fallSpeed = 1f;
-    private float knockbackSpeed = 3f;
-    private float knockbackDuration = .5f;
+    private float fallSpeed = 2f;
+    private float knockbackSpeed;
+    private float knockbackSpeedMax = 1.7f;
+    private float knockbackDuration;
+    private const float knockbackDurationMax = .3f;
+    private float bounceTimer = 0f;
+    private float bounceTimerMax = .5f;
+    private float bounceSpeed = 6f;
+
 
     public float oxygen;
     public float height;
 
     private bool isJumping;
     private bool isGrounded;
+    private bool isBouncing;
     private bool takingDamage;
 
 
@@ -45,14 +53,33 @@ public class ControllerObject : MonoBehaviour {
     }
 
     void Start () {
-        oxygen = 100;
+        knockbackDuration = knockbackDurationMax;
+        oxygen = 200;
         rotationSpeed = .2f;
         groundPos = astro.transform.position;
-	}
+        takingDamage = false;
+        isBouncing = false;
+        jumpSpeed = jumpSpeedMax;
+        knockbackSpeed = knockbackSpeedMax;
+
+    }
 	
 	void Update () {
 
-        height = Mathf.Abs(groundPos.z - astro.gameObject.transform.position.z);
+        height = (jumpTimer * 5) - 1;
+
+        if (isBouncing)
+        {
+            astro.gameObject.transform.Translate(Vector3.back * bounceSpeed * Time.smoothDeltaTime);
+            bounceSpeed -= bounceSpeed / 20;
+
+            bounceTimer += Time.deltaTime;
+            if (bounceTimer > bounceTimerMax)
+            {
+                bounceTimer = 0;
+                isBouncing = false;
+            }
+        }
 
         if (Input.touchCount >= 1 || Input.GetKey(KeyCode.Space))
         {
@@ -81,7 +108,7 @@ public class ControllerObject : MonoBehaviour {
                 isJumping = false;
             }
         }
-        else if (!isGrounded) //Means you're falling
+        else if (!isGrounded && !isBouncing) //Means you're falling
         {
             
             astro.gameObject.transform.Translate(Vector3.back * -fallSpeed * Time.smoothDeltaTime);
@@ -93,13 +120,13 @@ public class ControllerObject : MonoBehaviour {
             astro.gameObject.transform.position = groundPos;
             isGrounded = true;
             jumpTimer = 0f;
-            jumpSpeed = 1f;
+            jumpSpeed = jumpSpeedMax;
         }
 
         //tilt = new Vector3(-1f, Input.acceleration.y, 0f);
         tilt = new Vector3(-1f, Input.GetAxis("Horizontal"), 0f);
 
-        if (astro.gameObject != null && !takingDamage)
+        if (astro.gameObject != null && !takingDamage && !isBouncing)
         {
             planet.gameObject.transform.RotateAround(planet.gameObject.transform.position, tilt.normalized, rotationSpeed);
 
@@ -107,25 +134,22 @@ public class ControllerObject : MonoBehaviour {
         }
         else if (takingDamage)
         {
-            if (knockbackDuration > 0)
-            {
-                planet.gameObject.transform.RotateAround(planet.gameObject.transform.position, -tilt.normalized, knockbackSpeed);
-                knockbackDuration -= Time.deltaTime;
-            }
-            else
-            {
-                takingDamage = false;
-            }
-            
-            
+            takingDamage = Knockback(knockbackSpeed);
+        }
+        else if (isBouncing)
+        {
+            isBouncing = Knockback(knockbackSpeed / 2f);
         }
         else
         {
             //countdown, restart game
         }
 
-        oxygen -= Time.deltaTime + (height) * 0.1f;
-        //Debug.Log(oxygen);
+        oxygen -= Time.deltaTime;
+        if(isBouncing)
+            oxygen -= (height) * 0.05f;
+
+        Debug.Log(oxygen);
 	}
 
 
@@ -138,5 +162,27 @@ public class ControllerObject : MonoBehaviour {
     public void Refill(float m_refillOxygen)
     {
         oxygen += m_refillOxygen;
+    }
+
+    public void Bounce()
+    {
+        isBouncing = true;
+    }
+
+    public bool Knockback(float m_knockbackSpeed)
+    {
+        if (knockbackDuration > 0)
+        {
+            planet.gameObject.transform.RotateAround(planet.gameObject.transform.position, -tilt.normalized, m_knockbackSpeed);
+            knockbackDuration -= Time.deltaTime;
+            knockbackSpeed -= knockbackSpeed / 20;
+            return true;
+        }
+        else
+        {
+            knockbackDuration = knockbackDurationMax;
+            knockbackSpeed = knockbackSpeedMax;
+            return false;
+        }
     }
 }
