@@ -22,7 +22,7 @@ GameObject:
   - component: {fileID: 33157725930530098}
   - component: {fileID: 23477739804490416}
   m_Layer: 0
-  m_Name: FBX_World
+  m_Name: PREF_World
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
