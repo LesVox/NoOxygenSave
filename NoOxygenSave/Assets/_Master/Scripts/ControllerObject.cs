@@ -8,6 +8,7 @@ public class ControllerObject : MonoBehaviour {
 
     public Planet planet;
     public Astronaut astro;
+    public GameObject enemyPrefab;
 
     private Vector3 tilt;
     private Vector3 groundPos;
@@ -20,10 +21,11 @@ public class ControllerObject : MonoBehaviour {
     private float knockbackSpeed;
     private float knockbackSpeedMax = 1.7f;
     private float knockbackDuration;
-    private const float knockbackDurationMax = .3f;
+    private const float knockbackDurationMax = 1.3f;
     private float bounceTimer = 0f;
     private float bounceTimerMax = .5f;
     private float bounceSpeed = 6f;
+    private float forwardDirection = -1f;
 
 
     public float oxygen;
@@ -36,6 +38,19 @@ public class ControllerObject : MonoBehaviour {
 
 
     private float rotationSpeed;
+
+    public Vector3 Tilt
+    {
+        get
+        {
+            return tilt;
+        }
+
+        set
+        {
+            tilt = value;
+        }
+    }
 
     private void Awake()
     {
@@ -62,9 +77,19 @@ public class ControllerObject : MonoBehaviour {
         jumpSpeed = jumpSpeedMax;
         knockbackSpeed = knockbackSpeedMax;
 
+        SpawnEnemy();
     }
 	
 	void Update () {
+
+        if (Input.GetAxis("Horizontal") > 0 || Input.GetAxis("Horizontal") < 0)
+        {
+            forwardDirection += .01f;
+        }
+        else
+        {
+            forwardDirection = -1f;
+        }
 
         height = (jumpTimer * 5) - 1;
 
@@ -124,13 +149,13 @@ public class ControllerObject : MonoBehaviour {
         }
 
         //tilt = new Vector3(-1f, Input.acceleration.y, 0f);
-        tilt = new Vector3(-1f, Input.GetAxis("Horizontal"), 0f);
+        Tilt = new Vector3(forwardDirection, Input.GetAxis("Horizontal"), 0f);
 
         if (astro.gameObject != null && !takingDamage && !isBouncing)
         {
-            planet.gameObject.transform.RotateAround(planet.gameObject.transform.position, tilt.normalized, rotationSpeed);
+            planet.gameObject.transform.RotateAround(planet.gameObject.transform.position, Tilt.normalized, rotationSpeed);
 
-            astro.gameObject.transform.up = -tilt;
+            astro.gameObject.transform.up = -Tilt;
         }
         else if (takingDamage)
         {
@@ -173,7 +198,7 @@ public class ControllerObject : MonoBehaviour {
     {
         if (knockbackDuration > 0)
         {
-            planet.gameObject.transform.RotateAround(planet.gameObject.transform.position, -tilt.normalized, m_knockbackSpeed);
+            planet.gameObject.transform.RotateAround(planet.gameObject.transform.position, -Tilt.normalized, m_knockbackSpeed);
             knockbackDuration -= Time.deltaTime;
             knockbackSpeed -= knockbackSpeed / 20;
             return true;
@@ -184,5 +209,16 @@ public class ControllerObject : MonoBehaviour {
             knockbackSpeed = knockbackSpeedMax;
             return false;
         }
+    }
+
+    public void SpawnEnemy()
+    {
+        //TODO: Always instantiates to the right of the character, why?
+        GameObject spawnPoint = FindObjectOfType<EnemySpawn>().gameObject;
+        spawnPoint.gameObject.transform.RotateAround(planet.gameObject.transform.position, new Vector3(Random.Range(0, 180f), Random.Range(0, 180f), Random.Range(0, 180)), Random.Range(120f, 280f));
+        GameObject clark;
+        clark = Instantiate(enemyPrefab);
+
+        clark.transform.SetParent(FindObjectOfType<Planet>().gameObject.transform);
     }
 }
